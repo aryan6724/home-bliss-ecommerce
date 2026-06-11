@@ -1,16 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
+
+type Customer = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+};
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
 
+  const [customer, setCustomer] = useState<Customer | null>(null);
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    city: "",
+    address: "",
+    pincode: "",
+    paymentMethod: "Cash on Delivery",
+  });
+
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [customerLoading, setCustomerLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          cache: "no-store",
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.user) {
+          setCustomer(data.user);
+
+          setForm((prev) => ({
+            ...prev,
+            name: data.user.name || "",
+            email: data.user.email || "",
+            phone: data.user.phone || "",
+          }));
+        }
+      } catch {
+        setCustomer(null);
+      } finally {
+        setCustomerLoading(false);
+      }
+    };
+
+    fetchCustomer();
+  }, []);
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,20 +76,31 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (
+      !form.name.trim() ||
+      !form.email.trim() ||
+      !form.phone.trim() ||
+      !form.city.trim() ||
+      !form.address.trim() ||
+      !form.pincode.trim() ||
+      !form.paymentMethod.trim()
+    ) {
+      setError("Please fill all delivery details.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
-    const formData = new FormData(e.currentTarget);
-
     const orderData = {
       customer: {
-        name: String(formData.get("name")),
-        email: String(formData.get("email")),
-        phone: String(formData.get("phone")),
-        city: String(formData.get("city")),
-        address: String(formData.get("address")),
-        pincode: String(formData.get("pincode")),
-        paymentMethod: String(formData.get("paymentMethod")),
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        city: form.city.trim(),
+        address: form.address.trim(),
+        pincode: form.pincode.trim(),
+        paymentMethod: form.paymentMethod,
       },
       items: cartItems,
       total: cartTotal,
@@ -91,12 +158,21 @@ export default function CheckoutPage() {
           </div>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/orders"
-              className="rounded-full bg-black px-8 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
-            >
-              View My Orders
-            </Link>
+            {customer ? (
+              <Link
+                href="/account/orders"
+                className="rounded-full bg-black px-8 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              >
+                View My Orders
+              </Link>
+            ) : (
+              <Link
+                href="/orders"
+                className="rounded-full bg-black px-8 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              >
+                View My Orders
+              </Link>
+            )}
 
             <Link
               href="/track-order"
@@ -129,6 +205,28 @@ export default function CheckoutPage() {
             <h1 className="text-5xl font-semibold tracking-tight md:text-7xl">
               Checkout
             </h1>
+
+            {customerLoading ? (
+              <p className="mt-4 text-neutral-500">
+                Checking customer account...
+              </p>
+            ) : customer ? (
+              <p className="mt-4 text-neutral-500">
+                Signed in as{" "}
+                <span className="font-semibold text-black">
+                  {customer.name}
+                </span>
+                . Your name, email and phone are auto-filled.
+              </p>
+            ) : (
+              <p className="mt-4 text-neutral-500">
+                Have an account?{" "}
+                <Link href="/sign-in" className="font-semibold text-black">
+                  Sign in
+                </Link>{" "}
+                for faster checkout.
+              </p>
+            )}
           </div>
 
           <Link
@@ -144,7 +242,22 @@ export default function CheckoutPage() {
             onSubmit={handleSubmit}
             className="rounded-[3rem] bg-white p-8 shadow-sm md:p-10"
           >
-            <h2 className="text-3xl font-semibold">Delivery Details</h2>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-3xl font-semibold">Delivery Details</h2>
+
+                <p className="mt-2 text-neutral-500">
+                  Please confirm your delivery information before placing the
+                  order.
+                </p>
+              </div>
+
+              {customer && (
+                <span className="w-fit rounded-full bg-green-100 px-5 py-3 text-sm font-semibold text-green-700">
+                  Account Connected
+                </span>
+              )}
+            </div>
 
             <div className="mt-8 grid gap-5 md:grid-cols-2">
               <div>
@@ -156,6 +269,10 @@ export default function CheckoutPage() {
                   required
                   name="name"
                   type="text"
+                  value={form.name}
+                  onChange={(event) =>
+                    handleChange("name", event.target.value)
+                  }
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-[#f5f5f7] px-5 py-4 outline-none focus:border-black"
                   placeholder="Enter your name"
                 />
@@ -170,6 +287,10 @@ export default function CheckoutPage() {
                   required
                   name="email"
                   type="email"
+                  value={form.email}
+                  onChange={(event) =>
+                    handleChange("email", event.target.value)
+                  }
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-[#f5f5f7] px-5 py-4 outline-none focus:border-black"
                   placeholder="Enter your email"
                 />
@@ -184,6 +305,11 @@ export default function CheckoutPage() {
                   required
                   name="phone"
                   type="tel"
+                  maxLength={10}
+                  value={form.phone}
+                  onChange={(event) =>
+                    handleChange("phone", event.target.value)
+                  }
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-[#f5f5f7] px-5 py-4 outline-none focus:border-black"
                   placeholder="Enter your phone number"
                 />
@@ -198,6 +324,10 @@ export default function CheckoutPage() {
                   required
                   name="city"
                   type="text"
+                  value={form.city}
+                  onChange={(event) =>
+                    handleChange("city", event.target.value)
+                  }
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-[#f5f5f7] px-5 py-4 outline-none focus:border-black"
                   placeholder="Enter your city"
                 />
@@ -212,6 +342,11 @@ export default function CheckoutPage() {
                   required
                   name="pincode"
                   type="text"
+                  maxLength={6}
+                  value={form.pincode}
+                  onChange={(event) =>
+                    handleChange("pincode", event.target.value)
+                  }
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-[#f5f5f7] px-5 py-4 outline-none focus:border-black"
                   placeholder="Enter pincode"
                 />
@@ -225,6 +360,10 @@ export default function CheckoutPage() {
                 <select
                   required
                   name="paymentMethod"
+                  value={form.paymentMethod}
+                  onChange={(event) =>
+                    handleChange("paymentMethod", event.target.value)
+                  }
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-[#f5f5f7] px-5 py-4 outline-none focus:border-black"
                 >
                   <option value="Cash on Delivery">Cash on Delivery</option>
@@ -242,6 +381,10 @@ export default function CheckoutPage() {
                   required
                   name="address"
                   rows={5}
+                  value={form.address}
+                  onChange={(event) =>
+                    handleChange("address", event.target.value)
+                  }
                   className="mt-2 w-full resize-none rounded-2xl border border-neutral-200 bg-[#f5f5f7] px-5 py-4 outline-none focus:border-black"
                   placeholder="Enter your full delivery address"
                 />
@@ -256,7 +399,7 @@ export default function CheckoutPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || customerLoading}
               className="mt-8 w-full rounded-full bg-black px-8 py-4 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Placing Order..." : "Place Order"}

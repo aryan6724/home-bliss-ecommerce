@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import CustomerAuthButton from "@/components/CustomerAuthButton";
 
 export default function Navbar() {
   const { cartCount } = useCart();
@@ -35,27 +36,28 @@ export default function Navbar() {
           </Link>
 
           <Link href="/#collection" className="transition hover:text-white">
-          Collection
+            Collection
           </Link>
 
           <Link href="/#custom" className="transition hover:text-white">
-           Custom
-           </Link>
+            Custom
+          </Link>
 
           <Link href="/#about" className="transition hover:text-white">
-          About
+            About
           </Link>
 
           <Link href="/contact" className="transition hover:text-white">
-           Contact
+            Contact
           </Link>
 
-          <Link href="/admin-login" className="transition hover:text-white">
-            Admin
-          </Link>
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden items-center lg:flex">
+            <CustomerAuthButton />
+          </div>
+
           <Link
             href="/wishlist"
             onClick={closeMenu}
@@ -138,40 +140,47 @@ export default function Navbar() {
             </Link>
 
             <Link
-             href="/#collection"
-             onClick={closeMenu}
-             className="hover:text-white"
+              href="/#collection"
+              onClick={closeMenu}
+              className="hover:text-white"
             >
-            Collection
+              Collection
             </Link>
 
             <Link
-            href="/#custom"
-            onClick={closeMenu}
-             className="hover:text-white"
+              href="/#custom"
+              onClick={closeMenu}
+              className="hover:text-white"
             >
-            Custom
-           </Link>
+              Custom
+            </Link>
 
             <Link
-             href="/#about"
-             onClick={closeMenu}
-             className="hover:text-white"
-             >
-             About
-            </Link> 
-
-
-            <Link href="/contact" onClick={closeMenu} className="hover:text-white">
-             Contact
+              href="/#about"
+              onClick={closeMenu}
+              className="hover:text-white"
+            >
+              About
             </Link>
+
+            <Link
+              href="/contact"
+              onClick={closeMenu}
+              className="hover:text-white"
+            >
+              Contact
+            </Link>
+
+            <div className="pt-2">
+              <CustomerAuthButton onClick={closeMenu} />
+            </div>
 
             <Link
               href="/admin-login"
               onClick={closeMenu}
-              className="hover:text-white"
+              className="text-sm text-white/45 transition hover:text-white"
             >
-              Admin
+              Admin Login
             </Link>
           </div>
         </div>

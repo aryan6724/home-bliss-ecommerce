@@ -218,11 +218,6 @@ export async function POST(request: Request) {
         throw new Error(`Product not found or inactive: ${productId}`);
       }
 
-      if (product.stock < quantity) {
-        throw new Error(
-          `Only ${product.stock} items available for ${product.name}`
-        );
-      }
 
       verifiedItems.push({
         id: String(product._id),
@@ -260,25 +255,7 @@ export async function POST(request: Request) {
       { session }
     );
 
-    for (const item of verifiedItems) {
-      const stockUpdate = await Product.updateOne(
-        {
-          _id: item.id,
-          stock: { $gte: item.quantity },
-        },
-        {
-          $inc: {
-            stock: -item.quantity,
-          },
-        },
-        { session }
-      );
-
-      if (stockUpdate.modifiedCount !== 1) {
-        throw new Error(`Stock update failed for ${item.name}`);
-      }
-    }
-
+    
     await session.commitTransaction();
 
     return NextResponse.json({
