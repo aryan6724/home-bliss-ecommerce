@@ -72,13 +72,13 @@ export default function Footer() {
                 Contact
               </Link>
 
-              <Link
-                href="/showroom"
-                className="block text-white/50 transition hover:text-white"
+               <Link
+              href="/services"
+              className="block text-white/50 transition hover:text-white"
               >
-                Showroom
+              Services
               </Link>
-
+              
               <Link
                 href="/admin-login"
                 className="block text-white/50 transition hover:text-white"
